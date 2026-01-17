@@ -1,68 +1,57 @@
 from flask import Flask, render_template, request
 import requests
-import json
+from bs4 import BeautifulSoup
 import re
+import os
 
 app = Flask(__name__)
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0",
-    "Accept-Language": "en-US,en;q=0.9"
-}
+def extract_product(url):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.tiktok.com/"
+    }
 
-
-def extract_product_data(url):
     try:
-        html = requests.get(url, headers=HEADERS, timeout=15).text
+        r = requests.get(url, headers=headers, allow_redirects=True, timeout=15)
+        html = r.text
 
-        match = re.search(r'__UNIVERSAL_DATA_FOR_REHYDRATION__ = ({.*});', html)
-        if not match:
-            return []
+        soup = BeautifulSoup(html, "html.parser")
 
-        data = json.loads(match.group(1))
+        title_tag = soup.find("meta", property="og:title")
+        image_tag = soup.find("meta", property="og:image")
 
-        product = data["__DEFAULT_SCOPE__"]["webapp.product-detail"]["product"]
-        title = product["title"]
+        title = title_tag["content"] if title_tag else "Không lấy được tiêu đề"
+        image = image_tag["content"] if image_tag else "Không lấy được ảnh"
 
-        sku_props = product.get("skuProps", [])
-        sku_images = product.get("skuImages", {})
-
-        results = []
-
-        for prop in sku_props:
-            if prop["propName"].lower() == "color":
-                for value in prop["values"]:
-                    color_name = value["name"]
-                    sku_id = value["vid"]
-
-                    image_list = sku_images.get(str(sku_id), [])
-                    image_url = image_list[0] if image_list else ""
-
-                    results.append({
-                        "title": title,
-                        "color": color_name,
-                        "image": image_url
-                    })
-
-        return results
+        return {
+            "url": url,
+            "title": title,
+            "image": image
+        }
 
     except Exception as e:
-        print("ERROR:", e)
-        return []
+        return {
+            "url": url,
+            "title": f"Lỗi: {str(e)}",
+            "image": "—"
+        }
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    products = []
-    if request.method == "POST":
-        urls = request.form["urls"].splitlines()
-        for url in urls:
-            if url.strip():
-                products.extend(extract_product_data(url.strip()))
+    results = []
 
-    return render_template("index.html", products=products)
+    if request.method == "POST":
+        raw = request.form.get("links")
+        links = re.split(r"\n+", raw.strip())
+
+        for link in links:
+            results.append(extract_product(link.strip()))
+
+    return render_template("index.html", results=results)
 
 
 if __name__ == "__main__":
-    import os
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
