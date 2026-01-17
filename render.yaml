@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: tiktok-product-tool
+    env: python
+    plan: free
+    startCommand: python app.py

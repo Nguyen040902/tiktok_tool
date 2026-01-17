@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>TikTok Product Viewer</title>
+<style>
+body { font-family: Arial; padding: 20px }
+textarea { width: 100%; height: 120px }
+table { width: 100%; border-collapse: collapse; margin-top: 20px }
+th, td { border: 1px solid #ccc; padding: 8px }
+img { width: 80px }
+input { width: 100% }
+</style>
+</head>
+<body>
+
+<h2>TikTok Product Tool</h2>
+
+<textarea id="links" placeholder="Mỗi link 1 dòng"></textarea><br><br>
+<button onclick="fetchData()">LẤY DỮ LIỆU</button>
+
+<table>
+<thead>
+<tr>
+  <th>Tiêu đề</th>
+  <th>Ảnh</th>
+  <th>Link ảnh</th>
+  <th>Link sản phẩm</th>
+</tr>
+</thead>
+<tbody id="result"></tbody>
+</table>
+
+<script>
+function fetchData() {
+  const urls = document.getElementById("links").value
+    .split("\n")
+    .map(l => l.trim())
+    .filter(l => l);
+
+  fetch("/", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({urls})
+  })
+  .then(res => res.json())
+  .then(data => {
+    const tbody = document.getElementById("result");
+    tbody.innerHTML = "";
+
+    data.forEach(p => {
+      tbody.innerHTML += `
+        <tr>
+          <td>${p.title}</td>
+          <td><img src="${p.image}"></td>
+          <td><input value="${p.image}" onclick="this.select()"></td>
+          <td><input value="${p.product_url}" onclick="this.select()"></td>
+        </tr>`;
+    });
+  });
+}
+</script>
+
+</body>
+</html>
