@@ -29,16 +29,27 @@ def resolve_short_url(url):
 
 
 def extract_product(url):
+    session = requests.Session()
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.tiktok.com/",
+        "Connection": "keep-alive"
+    }
+
     try:
-        final_url = resolve_short_url(url)
+        # Bước 1: mở short link bằng GET để lấy redirect thật
+        r1 = session.get(url, headers=headers, allow_redirects=True, timeout=15)
+        final_url = r1.url
 
-        r = requests.get(
-            final_url,
-            headers=HEADERS,
-            timeout=15
-        )
+        # Bước 2: ép TikTok trả trang embedded có OG meta
+        if "view/product" in final_url:
+            final_url = final_url.split("?")[0] + "?_web_embedded=1"
 
-        soup = BeautifulSoup(r.text, "html.parser")
+        r2 = session.get(final_url, headers=headers, timeout=15)
+        soup = BeautifulSoup(r2.text, "html.parser")
 
         title_tag = soup.find("meta", property="og:title")
         image_tag = soup.find("meta", property="og:image")
@@ -55,9 +66,10 @@ def extract_product(url):
     except Exception as e:
         return {
             "product_url": url,
-            "title": f"Lỗi: {str(e)}",
+            "title": f"Lỗi: {e}",
             "image": ""
         }
+
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -79,3 +91,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 5000))
     )
+
