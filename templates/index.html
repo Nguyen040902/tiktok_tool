@@ -32,34 +32,32 @@ input { width: 100% }
 </table>
 
 <script>
-function fetchData() {
-  const urls = document.getElementById("links").value
-    .split("\n")
-    .map(l => l.trim())
-    .filter(l => l);
+async function fetchData() {
+    const links = document.getElementById("links").value.trim().split("\n");
 
-  fetch("/", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({urls})
-  })
-  .then(res => res.json())
-  .then(data => {
-    const tbody = document.getElementById("result");
-    tbody.innerHTML = "";
-
-    data.forEach(p => {
-      tbody.innerHTML += `
-        <tr>
-          <td>${p.title}</td>
-          <td><img src="${p.image}"></td>
-          <td><input value="${p.image}" onclick="this.select()"></td>
-          <td><input value="${p.product_url}" onclick="this.select()"></td>
-        </tr>`;
+    const res = await fetch("/fetch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls: links })
     });
-  });
+
+    const data = await res.json();
+    const table = document.getElementById("result");
+    table.innerHTML = "";
+
+    data.forEach(item => {
+        table.innerHTML += `
+            <tr>
+                <td>${item.title}</td>
+                <td><img src="${item.image}"></td>
+                <td><a href="${item.image}" target="_blank">Mở ảnh</a></td>
+                <td><a href="${item.product_url}" target="_blank">Mở sản phẩm</a></td>
+            </tr>
+        `;
+    });
 }
 </script>
 
 </body>
 </html>
+
