@@ -27,10 +27,10 @@ def resolve_link(url):
 
 def extract_product_data(url):
     try:
-        r = session.get(url, timeout=15)
+        r = session.get(url, timeout=8)  # giảm timeout
 
-        # Nếu bị TikTok chặn sẽ trả trang rất ngắn
-        if len(r.text) < 5000:
+        # Nếu TikTok trả trang chống bot → thường rất ngắn hoặc rất dài bất thường
+        if len(r.text) < 3000:
             return None
 
         soup = BeautifulSoup(r.text, "html.parser")
@@ -50,6 +50,8 @@ def extract_product_data(url):
             "product_url": url
         }
 
+    except requests.exceptions.Timeout:
+        return None
     except:
         return None
 
@@ -75,3 +77,4 @@ def fetch():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
