@@ -67,14 +67,18 @@ def fetch():
     results = []
 
     for url in urls:
-        real_url = resolve_link(url)
-        data = extract_product_data(real_url)
-        if data:
-            results.append(data)
+        try:
+            real_url = resolve_link(url)
+            data = extract_product_data(real_url)
+            if data:
+                results.append(data)
+        except:
+            continue
 
     return jsonify(results)
 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+
 
